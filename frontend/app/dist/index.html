@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Tasks</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+
+<body onload="render()">
+    <div class="card-body" id="toolbar"></div>
+    <div class="card-body" id="list"></div>
+
+    <script>
+        const baseUrl = 'http://localhost:9898';
+        let selected = undefined;
+        let users = [];
+        let items = [];
+
+        function setSelected(userId) {
+            items = [];
+            if (selected === userId) {
+                selected = undefined;
+            } else {
+                selected = userId;
+            }
+        }
+
+        function get(url) {
+            return fetch(`${baseUrl}/${url}`, {
+                method: 'GET',
+                'content-type': 'application/json'
+            }).then(r => r.json());
+        }
+
+        async function loadUsers() {
+            if (users.length === 0) {
+                users = await get('users');
+                render();
+            }
+        }
+
+        async function loadItems() {
+            if (items.length === 0) {
+                if (selected === undefined) {
+                    items = await get('items/items');
+                    render();
+                } else {
+                    items = await get(`items/items/${selected}`);
+                    render();
+                }
+            }
+        }
+
+        function clear(widget) {
+            while (widget.children.length > 0) {
+                widget.removeChild(widget.children[0]);
+            }
+        }
+
+        function render() {
+            loadUsers();
+            loadItems();
+            const toolbar = document.getElementById('toolbar');
+            const list = document.getElementById('list');
+            clear(toolbar);
+            clear(list);
+
+            for (const user of users) {
+                let name = user.username;
+                if (selected === user.id) {
+                    name = `*${name}*`;
+                }
+                const btn = reactbtn(name, () => {
+                    console.log("123");
+                    setSelected(user.id);
+                    render();
+                });
+                toolbar.appendChild(btn);
+            }
+
+            list.appendChild(reactlist(items.map(item => item.description).join(',')));
+
+        }
+
+        function reactbtn(name, onClick) {
+            const reactEl = document.createElement('react-btn');
+            reactEl.setAttribute('name', name);
+            reactEl.setAttribute('onClick', 'onClick');
+            reactEl.addEventListener('onClick', onClick);
+            return reactEl;
+        }
+
+        function reactlist(items) {
+            const reactEl = document.createElement('react-list');
+            reactEl.setAttribute('items', items);
+            return reactEl;
+        }
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/zone.js/0.9.1/zone.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/webcomponentsjs/2.2.10/custom-elements-es5-adapter.js"></script>
+    <script src="http://localhost:5001/main.js"></script>
+    <script src="http://localhost:5002/main.js"></script>
+</body>
+
+</html>
